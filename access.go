@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
+
 )
 
 var orm *xorm.Engine
@@ -26,8 +27,9 @@ func InitAccessByConfig(cfg string) {
 	InitConfig(cfg)
 	if orm == nil {
 		flowlog.Info(DbDriverConnstr)
-		connString := fmt.Sprintf(DbDriverConnstr, DbUsername, DbPassword,
-			DbServer, DbPort, DbDatebase)
+		//connString := fmt.Sprintf(DbDriverConnstr, DbUsername, DbPassword,
+		//	DbServer, DbPort, DbDatebase)
+		connString := DbDriverConnstr
 
 		flowlog.Info(connString)
 		var err error
@@ -40,7 +42,7 @@ func InitAccessByConfig(cfg string) {
 		orm.SetMaxOpenConns(MaxOpenConns)
 
 		orm.TZLocation = time.Local
-		orm.ShowSQL = true
+		orm.ShowSQL(false)
 
 		tbMapper := core.NewPrefixMapper(core.SameMapper{}, "GF_")
 		orm.SetTableMapper(tbMapper)
@@ -79,5 +81,5 @@ func DeleteObj(inf interface{}) {
 	_, err := orm.Delete(inf)
 	t := reflect.TypeOf(inf)
 	PanicIf(err, "fail to delete %v", t)
-	flowlog.Info("%v deleted", t)
+	flowlog.Infof("%v deleted", t)
 }

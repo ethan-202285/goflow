@@ -13,7 +13,8 @@ import (
 
 //生成UUID
 func NewUUID() string {
-	return uuid.NewV4().String()
+	u, _ := uuid.NewV4()
+	return u.String()
 }
 
 //字符串转整型
