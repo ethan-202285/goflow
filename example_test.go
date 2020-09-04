@@ -5,6 +5,7 @@ import (
 	"testing"
 	"tingnide.pro/infra/tboot/pkg/app"
 	"tingnide.pro/infra/tboot/pkg/app/web"
+	"tingnide.pro/infra/tboot/pkg/tlog"
 	"tingnide.pro/infra/tgorm"
 
 	"github.com/Knetic/govaluate"
@@ -47,33 +48,9 @@ type a struct {
 
 }
 
-func aa(application app.ApplicationContext, repository tgorm.Repository) *a {
+func actorAll(application app.ApplicationContext, repository tgorm.Repository) *a {
 	InitAccess(repository)
-	fmt.Printf("--- Start TestForkJoin ---\n")
-	bytes := LoadXML("res/forkjoin.xml")
-	engine := NewEngineByConfig("conf/app.conf")
-	processId := engine.Deploy(bytes, "")
-	args := map[string]interface{}{
-		"task1.operator": []string{"1"},
-		"task2.operator": []string{"1"},
-		"task3.operator": []string{"1"},
-	}
-	order := engine.StartInstanceById(processId, "2", args)
-	tasks := GetActiveTasksByOrderId(order.Id)
-	for _, task := range tasks {
-		engine.ExecuteTask(task.Id, "1", args)
-	}
-	fmt.Printf("--- End TestForkJoin ---\n")
-	return &a{}
-}
 
-func TestController(t *testing.T) {
-	web.NewApplication(aa).Run()
-}
-
-
-//测试参与方式ALL
-func TestActorAll(t *testing.T) {
 	fmt.Printf("--- Start TestActorAll ---\n")
 	bytes := LoadXML("res/actorall.xml")
 	engine := NewEngineByConfig("conf/app.conf")
@@ -82,13 +59,16 @@ func TestActorAll(t *testing.T) {
 		"task1.operator": []string{"1", "2"},
 	}
 	order := engine.StartInstanceById(processId, "2", args)
-	t.Logf("OrderId %s", order.Id)
+	tlog.Infof("OrderId %s", order.Id)
 
 	fmt.Printf("--- End TestActorAll ---\n")
+
+	return &a{}
 }
 
-//测试分叉和合并
-func TestForkJoin(t *testing.T) {
+func forkJoin(application app.ApplicationContext, repository tgorm.Repository) *a {
+	InitAccess(repository)
+
 	fmt.Printf("--- Start TestForkJoin ---\n")
 	bytes := LoadXML("res/forkjoin.xml")
 	engine := NewEngineByConfig("conf/app.conf")
@@ -99,16 +79,34 @@ func TestForkJoin(t *testing.T) {
 		"task3.operator": []string{"1"},
 	}
 	order := engine.StartInstanceById(processId, "2", args)
-	t.Logf("OrderId %s", order.Id)
+	tlog.Infof("OrderId %s", order.Id)
 	tasks := GetActiveTasksByOrderId(order.Id)
 	for _, task := range tasks {
 		engine.ExecuteTask(task.Id, "1", args)
 	}
 	fmt.Printf("--- End TestForkJoin ---\n")
+
+	return &a{}
+}
+
+//测试参与方式ALL
+func TestActorAll(t *testing.T) {
+	web.NewApplication(actorAll).Run()
+}
+
+//测试分叉和合并
+func TestForkJoin(t *testing.T) {
+	web.NewApplication(forkJoin).Run()
 }
 
 //测试决策1
 func TestDecision1(t *testing.T) {
+	web.NewApplication(decision1).Run()
+}
+
+func decision1(application app.ApplicationContext, repository tgorm.Repository) *a {
+	InitAccess(repository)
+
 	fmt.Printf("--- Start TestDecision1 ---\n")
 	bytes := LoadXML("res/decision1.xml")
 	engine := NewEngineByConfig("conf/app.conf")
@@ -119,12 +117,20 @@ func TestDecision1(t *testing.T) {
 		"content":        "toTask2",
 	}
 	order := engine.StartInstanceById(processId, "2", args)
-	t.Logf("OrderId %s", order.Id)
+	tlog.Infof("OrderId %s", order.Id)
 	fmt.Printf("--- End TestDecision1 ---\n")
+
+	return &a{}
 }
 
 //测试决策2
 func TestDecision2(t *testing.T) {
+	web.NewApplication(decision2).Run()
+}
+
+func decision2(application app.ApplicationContext, repository tgorm.Repository) *a {
+	InitAccess(repository)
+
 	fmt.Printf("--- Start TestDecision2 ---\n")
 	bytes := LoadXML("res/decision2.xml")
 	engine := NewEngineByConfig("conf/app.conf")
@@ -137,12 +143,20 @@ func TestDecision2(t *testing.T) {
 		"content":        250.0,
 	}
 	order := engine.StartInstanceById(processId, "2", args)
-	t.Logf("OrderId %s", order.Id)
+	tlog.Infof("OrderId %s", order.Id)
 	fmt.Printf("--- End TestDecision2 ---\n")
+
+	return &a{}
 }
 
 //简单测试
 func TestSimple(t *testing.T) {
+	web.NewApplication(simple).Run()
+}
+
+func simple(application app.ApplicationContext, repository tgorm.Repository) *a {
+	InitAccess(repository)
+
 	fmt.Printf("--- Start TestSimple ---\n")
 	bytes := LoadXML("res/simple.xml")
 	engine := NewEngineByConfig("conf/app.conf")
@@ -151,16 +165,25 @@ func TestSimple(t *testing.T) {
 		"task1.operator": []string{"1"},
 	}
 	order := engine.StartInstanceById(processId, "2", args)
-	t.Logf("OrderId %s", order.Id)
+	tlog.Infof("OrderId %s", order.Id)
 	tasks := GetActiveTasksByOrderId(order.Id)
 	for _, task := range tasks {
 		engine.ExecuteTask(task.Id, "1", args)
 	}
 	fmt.Printf("--- End TestSimple ---\n")
+
+	return &a{}
 }
+
 
 //测试协办流程
 func TestAssist(t *testing.T) {
+	web.NewApplication(assist).Run()
+}
+
+func assist(application app.ApplicationContext, repository tgorm.Repository) *a {
+	InitAccess(repository)
+
 	fmt.Printf("--- Start TestAssist ---\n")
 	bytes := LoadXML("res/assist.xml")
 	engine := NewEngineByConfig("conf/app.conf")
@@ -172,54 +195,62 @@ func TestAssist(t *testing.T) {
 		CreateNewTask(task.Id, TO_ASSIST, "test")
 	}
 	fmt.Printf("--- End TestAssist ---\n")
+
+	return &a{}
 }
 
 //测试子流程1
-func TestSubProcess1(t *testing.T) {
-	fmt.Printf("--- Start TestSubProcess1 ---\n")
-	engine := NewEngineByConfig("conf/app.conf")
-	bytes := LoadXML("res/subprocess.child.xml")
-	processId := engine.Deploy(bytes, "")
-	bytes = LoadXML("res/subprocess.sp1.xml")
-	processId = engine.Deploy(bytes, "")
-
-	args := map[string]interface{}{
-		"task1.operator": []string{"1"},
-	}
-	order := engine.StartInstanceById(processId, "2", args)
-	t.Logf("OrderId %s", order.Id)
-
-	tasks := GetActiveTasksByOrderId(order.Id)
-	for _, task := range tasks {
-		engine.ExecuteTask(task.Id, "1", args)
-	}
-	fmt.Printf("--- End TestSubProcess1 ---\n")
-}
-
-//测试子流程2
-func TestSubProcess2(t *testing.T) {
-	fmt.Printf("--- Start TestSubProcess2 ---\n")
-	engine := NewEngineByConfig("conf/app.conf")
-	bytes := LoadXML("res/subprocess.child.xml")
-	processId := engine.Deploy(bytes, "")
-	bytes = LoadXML("res/subprocess.sp2.xml")
-	processId = engine.Deploy(bytes, "")
-
-	args := map[string]interface{}{
-		"task1.operator": []string{"1"},
-	}
-	order := engine.StartInstanceById(processId, "2", args)
-	t.Logf("OrderId %s", order.Id)
-
-	tasks := GetActiveTasksByOrderId(order.Id)
-	for _, task := range tasks {
-		engine.ExecuteTask(task.Id, "1", args)
-	}
-	fmt.Printf("--- End TestSubProcess2 ---\n")
-}
+//func TestSubProcess1(t *testing.T) {
+//	fmt.Printf("--- Start TestSubProcess1 ---\n")
+//	engine := NewEngineByConfig("conf/app.conf")
+//	bytes := LoadXML("res/subprocess.child.xml")
+//	processId := engine.Deploy(bytes, "")
+//	bytes = LoadXML("res/subprocess.sp1.xml")
+//	processId = engine.Deploy(bytes, "")
+//
+//	args := map[string]interface{}{
+//		"task1.operator": []string{"1"},
+//	}
+//	order := engine.StartInstanceById(processId, "2", args)
+//	t.Logf("OrderId %s", order.Id)
+//
+//	tasks := GetActiveTasksByOrderId(order.Id)
+//	for _, task := range tasks {
+//		engine.ExecuteTask(task.Id, "1", args)
+//	}
+//	fmt.Printf("--- End TestSubProcess1 ---\n")
+//}
+//
+////测试子流程2
+//func TestSubProcess2(t *testing.T) {
+//	fmt.Printf("--- Start TestSubProcess2 ---\n")
+//	engine := NewEngineByConfig("conf/app.conf")
+//	bytes := LoadXML("res/subprocess.child.xml")
+//	processId := engine.Deploy(bytes, "")
+//	bytes = LoadXML("res/subprocess.sp2.xml")
+//	processId = engine.Deploy(bytes, "")
+//
+//	args := map[string]interface{}{
+//		"task1.operator": []string{"1"},
+//	}
+//	order := engine.StartInstanceById(processId, "2", args)
+//	t.Logf("OrderId %s", order.Id)
+//
+//	tasks := GetActiveTasksByOrderId(order.Id)
+//	for _, task := range tasks {
+//		engine.ExecuteTask(task.Id, "1", args)
+//	}
+//	fmt.Printf("--- End TestSubProcess2 ---\n")
+//}
 
 //测试小组
 func TestGroup(t *testing.T) {
+	web.NewApplication(group).Run()
+}
+
+func group(application app.ApplicationContext, repository tgorm.Repository) *a {
+	InitAccess(repository)
+
 	fmt.Printf("--- Start TestGroup ---\n")
 	bytes := LoadXML("res/group.xml")
 	engine := NewEngineByConfig("conf/app.conf")
@@ -228,17 +259,25 @@ func TestGroup(t *testing.T) {
 		"task1.operator": []string{"role1"},
 	}
 	order := engine.StartInstanceByName("group", -1, "2", args)
-	t.Logf("OrderId %s", order.Id)
+	tlog.Infof("OrderId %s", order.Id)
 	tasks := GetActiveTasksByOrderId(order.Id)
 	for _, task := range tasks {
 		//操作人改为test时，角色对应test，会无权处理
 		engine.ExecuteTask(task.Id, "ADMIN", args)
 	}
 	fmt.Printf("--- End TestGroup ---\n")
+
+	return &a{}
 }
 
 //测试权限
 func TestRight(t *testing.T) {
+	web.NewApplication(right).Run()
+}
+
+func right(application app.ApplicationContext, repository tgorm.Repository) *a {
+	InitAccess(repository)
+
 	fmt.Printf("--- Start TestRight ---\n")
 	bytes := LoadXML("res/right.xml")
 	engine := NewEngineByConfig("conf/app.conf")
@@ -247,16 +286,24 @@ func TestRight(t *testing.T) {
 		"task1.operator": []string{"2"},
 	}
 	order := engine.StartInstanceById(processId, "2", args)
-	t.Logf("OrderId %s", order.Id)
+	tlog.Infof("OrderId %s", order.Id)
 	tasks := GetActiveTasksByOrderId(order.Id)
 	for _, task := range tasks {
 		engine.ExecuteTask(task.Id, string(ER_ADMIN), args)
 	}
 	fmt.Printf("--- End TestRight ---\n")
+
+	return &a{}
 }
 
 //测试任务提取
 func TestTake(t *testing.T) {
+	web.NewApplication(task).Run()
+}
+
+func task(application app.ApplicationContext, repository tgorm.Repository) *a {
+	InitAccess(repository)
+
 	fmt.Printf("--- Start TestTake ---\n")
 	bytes := LoadXML("res/take.xml")
 	engine := NewEngineByConfig("conf/app.conf")
@@ -265,12 +312,14 @@ func TestTake(t *testing.T) {
 		"task1.operator": []string{"1"},
 	}
 	order := engine.StartInstanceById(processId, "2", args)
-	t.Logf("OrderId %s", order.Id)
+	tlog.Infof("OrderId %s", order.Id)
 	tasks := GetActiveTasksByOrderId(order.Id)
 	for _, task := range tasks {
 		TakeTask(task.Id, "1")
 	}
 	fmt.Printf("--- End TestTake ---\n")
+
+	return &a{}
 }
 
 //测试时限控制
