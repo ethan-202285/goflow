@@ -1,14 +1,15 @@
 package goflow
 
 import (
+	"encoding/json"
 	"fmt"
+	uuid "github.com/iris-contrib/go.uuid"
+	"github.com/zhinanxing/gorm/v3"
 	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/bitly/go-simplejson"
-	"github.com/satori/go.uuid"
+	"tingnide.pro/infra/tboot/pkg/tlog"
 )
 
 //生成UUID
@@ -35,7 +36,7 @@ func IntToStr(value int) string {
 func LoadXML(xmlFile string) []byte {
 	content, err := ioutil.ReadFile(xmlFile)
 	if err != nil {
-		flowlog.Errorf("error to read xml file %v", err)
+		tlog.Errorf("error to read xml file %v", err)
 		panic(fmt.Errorf("error to read xml file!"))
 	}
 	return content
@@ -46,16 +47,15 @@ func MapToJson(v map[string]interface{}) string {
 	if v == nil {
 		return ""
 	}
-	js := simplejson.New()
-	js.Set("map", v)
-	ret, _ := js.Get("map").Encode()
+	ret, _ := json.Marshal(v)
 	return string(ret)
 }
 
 //json转map
 func JsonToMap(v string) map[string]interface{} {
-	js, _ := simplejson.NewJson([]byte(v))
-	return js.MustMap()
+	var r map[string]interface{}
+	json.Unmarshal([]byte(v), &r)
+	return r
 }
 
 //删除Slice中的元素
@@ -77,7 +77,8 @@ func FormatTime(t time.Time, layout string) string {
 	}
 }
 
-func ProcessTime(args map[string]interface{}, timeParam string) time.Time {
+
+func ProcessTime(args map[string]interface{}, timeParam string) *time.Time {
 	if timeParam != "" {
 		var timeStr string
 		if timeInf, ok := args[timeParam]; ok {
@@ -87,10 +88,10 @@ func ProcessTime(args map[string]interface{}, timeParam string) time.Time {
 		}
 		the_time, err := time.Parse(STD_TIME_LAYOUT, timeStr)
 		if err == nil {
-			return the_time
+			return &the_time
 		}
 	}
-	return time.Time{}
+	return nil
 }
 
 //TaskType转换
@@ -114,7 +115,10 @@ func ProcessPerformType(performType PERFORM_TYPE) PERFORM_ORDER {
 //error处理
 func PanicIf(err error, format string, v ...interface{}) {
 	if err != nil {
-		flowlog.Errorf(format+" [ %v ]", v, err)
-		panic(err)
+		if err != gorm.ErrRecordNotFound {
+			tlog.Errorf(format+" [ %v ]", v, err)
+			panic(err)
+		}
+
 	}
 }

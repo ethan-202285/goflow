@@ -3,6 +3,9 @@ package goflow
 import (
 	"fmt"
 	"testing"
+	"tingnide.pro/infra/tboot/pkg/app"
+	"tingnide.pro/infra/tboot/pkg/app/web"
+	"tingnide.pro/infra/tgorm"
 
 	"github.com/Knetic/govaluate"
 	_ "github.com/go-sql-driver/mysql"
@@ -38,6 +41,36 @@ func TestExpression(t *testing.T) {
 
 	fmt.Printf("--- End TestExpression ---\n")
 }
+
+
+type a struct {
+
+}
+
+func aa(application app.ApplicationContext, repository tgorm.Repository) *a {
+	InitAccess(repository)
+	fmt.Printf("--- Start TestForkJoin ---\n")
+	bytes := LoadXML("res/forkjoin.xml")
+	engine := NewEngineByConfig("conf/app.conf")
+	processId := engine.Deploy(bytes, "")
+	args := map[string]interface{}{
+		"task1.operator": []string{"1"},
+		"task2.operator": []string{"1"},
+		"task3.operator": []string{"1"},
+	}
+	order := engine.StartInstanceById(processId, "2", args)
+	tasks := GetActiveTasksByOrderId(order.Id)
+	for _, task := range tasks {
+		engine.ExecuteTask(task.Id, "1", args)
+	}
+	fmt.Printf("--- End TestForkJoin ---\n")
+	return &a{}
+}
+
+func TestController(t *testing.T) {
+	web.NewApplication(aa).Run()
+}
+
 
 //测试参与方式ALL
 func TestActorAll(t *testing.T) {

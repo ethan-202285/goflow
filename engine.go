@@ -2,9 +2,6 @@ package goflow
 
 import (
 	"time"
-
-	"github.com/go-xorm/xorm"
-	"github.com/lunny/log"
 )
 
 //GFLOW数据流引擎
@@ -65,7 +62,8 @@ func (p *Engine) GetExecutionByTaskId(id string, operator string, args map[strin
 	order := &Order{}
 	if order.GetOrderById(task.OrderId) {
 		order.LastUpdator = operator
-		order.LastUpdateTime = time.Now()
+		ttt := time.Now()
+		order.LastUpdateTime = &ttt
 		if task.TaskType == TO_ASSIST { //协办任务完成不产生执行对象
 			return nil
 		} else {
@@ -138,7 +136,8 @@ func (p *Engine) CreateFreeTask(orderId string, operator string, args map[string
 	order := &Order{}
 	if order.GetOrderById(orderId) {
 		order.LastUpdator = operator
-		order.LastUpdateTime = time.Now()
+		ttt := time.Now()
+		order.LastUpdateTime = &ttt
 
 		process := p.GetProcessById(order.Id)
 		execution := &Execution{
@@ -154,26 +153,9 @@ func (p *Engine) CreateFreeTask(orderId string, operator string, args map[string
 }
 
 //新建引擎
-func NewEngineByConfig(cfg string) *Engine {
-	InitAccessByConfig(cfg)
+func NewEngineByConfig(s string) *Engine {
+	//InitAccess(o)
 	engine := &Engine{}
 	engine.InitProcessService()
 	return engine
-}
-
-//新建引擎
-func NewEngineByXorm(orm *xorm.Engine) *Engine {
-	InitAccessByXorm(orm)
-	engine := &Engine{}
-	engine.InitProcessService()
-	return engine
-}
-
-//初始化LOG
-func init() {
-	w := log.NewFileWriter(log.FileOptions{
-		ByType: log.ByDay,
-		Dir:    "./flowlogs",
-	})
-	flowlog.SetOutput(w)
 }

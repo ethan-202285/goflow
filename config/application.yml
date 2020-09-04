@@ -1,0 +1,14 @@
+app:
+  project: sam
+  name: sam
+  profiles:
+    include:
+      - logging
+      - tgorm
+      - configure
+      - samapi
+      - grpc
+      - swagger
+
+logging:
+  level: debug

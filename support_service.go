@@ -186,7 +186,7 @@ func RemoveTaskActor(taskId string, actors ...string) {
 					TaskId:  taskId,
 					ActorId: actorId,
 				}
-				DeleteObj(taskActor)
+				DeleteObj(fmt.Sprintf("task_id = %s and actor_id = %s", taskId, actorId), taskActor)
 			}
 			v := JsonToMap(task.Variable)
 			oldActors := strings.Split(v[DEFAULT_KEY_ACTOR].(string), ",")
@@ -215,7 +215,8 @@ func TakeTask(taskId string, operator string) *Task {
 			return nil
 		}
 		task.Operator = operator
-		task.FinishTime = time.Now()
+		tttt := time.Now()
+		task.FinishTime = &tttt
 		Update(task, task.Id)
 		return task
 	} else {
@@ -259,6 +260,7 @@ func CompleteTask(taskId string, operator string, args map[string]interface{}) *
 	if task.GetTaskById(taskId) {
 		task.Variable = MapToJson(args)
 		if IsAllowed(task, operator) {
+			ttt := time.Now()
 			historyTask := &HistoryTask{
 				Id:           task.Id,
 				OrderId:      task.OrderId,
@@ -271,7 +273,7 @@ func CompleteTask(taskId string, operator string, args map[string]interface{}) *
 				ParentTaskId: task.ParentTaskId,
 				Variable:     task.Variable,
 				PerformType:  task.PerformType,
-				FinishTime:   time.Now(),
+				FinishTime:   &ttt,
 				Operator:     operator,
 				TaskState:    FS_FINISH,
 			}
@@ -305,7 +307,7 @@ func CreateOrder(process *Process, operator string, args map[string]interface{},
 		ProcessId:      process.Id,
 		Creator:        operator,
 		CreateTime:     now,
-		LastUpdateTime: now,
+		LastUpdateTime: &now,
 		LastUpdator:    operator,
 		Variable:       MapToJson(args),
 		OrderNo:        GenerateNo(),
@@ -378,7 +380,8 @@ func TerminateOrder(id string, operator string) {
 		historyOrder := &HistoryOrder{}
 		historyOrder.DataByOrder(order)
 		historyOrder.OrderState = FS_TERMINATION
-		historyOrder.FinishTime = time.Now()
+		ttt := time.Now()
+		historyOrder.FinishTime = &ttt
 
 		Update(historyOrder, historyOrder.Id)
 		Delete(order, order.Id)
@@ -416,7 +419,8 @@ func UpdateCCStatus(orderId string, actorIds ...string) {
 	ccorders := GetCCOrder(orderId, actorIds...)
 	for _, ccorder := range ccorders {
 		ccorder.State = FS_FINISH
-		ccorder.FinishTime = time.Now()
+		ttt := time.Now()
+		ccorder.FinishTime = &ttt
 		Update(ccorder, ccorder.Id)
 	}
 }
